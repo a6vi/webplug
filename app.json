@@ -7,6 +7,13 @@
     "icon": "./assets/images/logo.png",
     "scheme": "myskiapp",
     "userInterfaceStyle": "automatic",
+    "updates": {
+      "url": "https://myski.ski/appplug/manifest.json",
+      "enabled": true
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "ios": {
       "icon": "./assets/images/favicon.ico"
     },
@@ -17,23 +24,29 @@
         "backgroundImage": "./assets/images/logo.png",
         "monochromeImage": "./assets/images/logo.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.myskiapp"
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.ico"
+      "favicon": "./assets/images/logo.png"
     },
     "plugins": [
-      "expo-router",
       [
-        "expo-splash-screen",
+        "expo-brownfield",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "ios": {
+            "targetName": "MyskiPlug",
+            "bundleIdentifier": "com.myski.myskiplug"
+          },
+          "android": {
+            "libraryName": "MyskiPlug",
+            "group": "com.myski",
+            "package": "com.myski.myskiplug",
+            "version": "1.0.0"
+          }
         }
-      ],
-      "expo-brownfield"
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

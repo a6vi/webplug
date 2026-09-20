@@ -1,6 +1,6 @@
 {
   "name": "myskiapp",
-  "main": "expo-router/entry",
+  "main": "./src/entry.tsx",
   "version": "1.0.0",
   "dependencies": {
     "@callstack/brownfield-navigation": "^5.1.0",
@@ -18,6 +18,7 @@
     "expo-status-bar": "~56.0.4",
     "expo-symbols": "~56.0.7",
     "expo-system-ui": "~56.0.5",
+    "expo-updates": "~56.0.27",
     "expo-web-browser": "~56.0.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -39,7 +40,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "export": "npx expo export -p ios -p android",
+    "export": "expo export -p ios -p android && node scripts/generate-manifests.mjs",
+    "manifest": "node scripts/generate-manifests.mjs",
     "lint": "expo lint"
   },
   "private": true

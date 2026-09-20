@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo/ui": "~56.0.26",
     "expo": "~56.0.22",
+    "expo-brownfield": "~56.0.29",
     "expo-constants": "~56.0.26",
     "expo-device": "~56.0.4",
     "expo-font": "~56.0.7",

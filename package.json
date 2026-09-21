@@ -40,8 +40,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "export": "expo export -p ios -p android && node scripts/generate-manifests.mjs",
+    "export-assets": "expo export -p ios -p android && node scripts/generate-manifests.mjs",
     "manifest": "node scripts/generate-manifests.mjs",
+    "export-android": "npx expo-brownfield build:android --fused --release --repo MavenLocal --verbose",
     "lint": "expo lint"
   },
   "private": true

@@ -1,6 +1,6 @@
 # 三个页面的原生集成与更新
 
-本项目使用 Expo SDK 56 和 Expo Brownfield。原生宿主直接打开以下 React Native 组件名，不经过首页：`SkiData`、`AiAnalysis`、`ResortWeather`。入口注册在 `src/entry.tsx`。`main` 仅作为兼容入口，显示滑雪数据页。
+本项目使用 Expo SDK 57 和 Expo Brownfield。原生宿主直接打开以下 React Native 组件名，不经过首页：`SkiData`、`AiAnalysis`、`ResortWeather`。入口注册在 `src/entry.tsx`。`main` 仅作为兼容入口，显示滑雪数据页。
 
 ## 打包为 iOS / Android 库
 
@@ -70,7 +70,7 @@ navigationController?.pushViewController(page, animated: true)
 三个页面位于同一 JS bundle 中，`expo-updates` 在发布新 bundle 后同时更新它们。当前 `app.json` 配置更新地址为 `https://myski.ski/appplug/manifest.json`，运行版本按应用版本 `1.0.0` 匹配。
 
 ```sh
-npm run export
+npm run export-assets
 ```
 
 命令自动生成 `dist/ios/manifest.json`、`dist/android/manifest.json` 和 `dist/nginx-expo-updates.conf`。将 `dist` 的**内容**上传到服务器的 `/var/www/html/appplug/`，并将生成的 Nginx 配置中 `map` 放入 `http` 块、`location` 放入 `myski.ski` 的 HTTPS `server` 块，然后执行 `nginx -t` 并重载。已有的 `_expo` 和 `assets` 中的旧哈希文件需保留，避免正在下载旧版本的客户端失败。

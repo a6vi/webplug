@@ -1,0 +1,72 @@
+name: Publish page update
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: myski-page-update
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Export and upload iOS/Android updates
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
+      - name: Export updates
+        run: npm run export-assets
+      - name: Keep a copy of this update
+        uses: actions/upload-artifact@v4
+        with:
+          name: page-update-${{ github.run_id }}
+          path: dist/
+          if-no-files-found: error
+      - name: Upload assets, then publish manifests
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          : "${DEPLOY_HOST:?Set DEPLOY_HOST in repository secrets}"
+          : "${DEPLOY_USER:?Set DEPLOY_USER in repository secrets}"
+          : "${DEPLOY_SSH_KEY:?Set DEPLOY_SSH_KEY in repository secrets}"
+          : "${DEPLOY_KNOWN_HOSTS:?Set DEPLOY_KNOWN_HOSTS in repository secrets}"
+          key_file="$RUNNER_TEMP/myski_deploy_key"
+          hosts_file="$RUNNER_TEMP/myski_known_hosts"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$key_file"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$hosts_file"
+          chmod 600 "$key_file" "$hosts_file"
+          ssh_command="ssh -i $key_file -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$hosts_file"
+          remote="$DEPLOY_USER@$DEPLOY_HOST"
+          $ssh_command "$remote" 'mkdir -p /var/www/html/appplug/ios /var/www/html/appplug/android'
+          rsync -az -e "$ssh_command" --exclude='manifest.json' --exclude='nginx-expo-updates.conf' dist/ "$remote:/var/www/html/appplug/"
+          rsync -az -e "$ssh_command" dist/ios/manifest.json "$remote:/var/www/html/appplug/ios/manifest.json"
+          rsync -az -e "$ssh_command" dist/android/manifest.json "$remote:/var/www/html/appplug/android/manifest.json"
+      - name: Check published manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtime_version="$(node -p 'require("./app.json").expo.version')"
+          for platform in ios android; do
+            curl --fail --silent --show-error --retry 3 \
+              -H 'expo-protocol-version: 1' \
+              -H "expo-platform: $platform" \
+              -H "expo-runtime-version: $runtime_version" \
+              "https://myski.ski/appplug/manifest.json" \
+              -o "$RUNNER_TEMP/$platform-manifest.json"
+            node -e 'const live=require(process.argv[1]); const expected=require(process.argv[2]); if(live.runtimeVersion!==expected.runtimeVersion || live.id!==expected.id) process.exit(1)' \
+              "$RUNNER_TEMP/$platform-manifest.json" "$GITHUB_WORKSPACE/dist/$platform/manifest.json"
+          done

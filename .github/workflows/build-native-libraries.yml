@@ -1,0 +1,56 @@
+name: Build native libraries
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Android Maven library
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
+      - name: Build and publish to runner's local Maven repository
+        run: npx expo-brownfield build:android --release --repo MavenLocal
+      - name: Upload Android Maven files
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-maven-library
+          path: ~/.m2/repository/com/myski/
+          if-no-files-found: error
+
+  ios:
+    name: iOS XCFrameworks
+    runs-on: macos-26
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Show Xcode version
+        run: xcodebuild -version
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
+      - name: Build XCFrameworks
+        run: npx expo-brownfield build:ios --release --artifacts artifacts
+      - name: Upload iOS frameworks
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-xcframeworks
+          path: artifacts/
+          if-no-files-found: error

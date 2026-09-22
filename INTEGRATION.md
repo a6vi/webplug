@@ -2,6 +2,38 @@
 
 本项目使用 Expo SDK 57 和 Expo Brownfield。原生宿主直接打开以下 React Native 组件名，不经过首页：`SkiData`、`AiAnalysis`、`ResortWeather`。入口注册在 `src/entry.tsx`。`main` 仅作为兼容入口，显示滑雪数据页。
 
+## 在 GitHub Actions 手动交付
+
+仓库提供两个手动触发的工作流，分别位于 `.github/workflows/build-native-libraries.yml` 和 `.github/workflows/publish-page-update.yml`。把文件提交并推送到 GitHub 的默认分支后，在仓库 **Actions** 页面选择对应工作流，点击 **Run workflow**，选择要构建的分支，再点击绿色的 **Run workflow**。工作流只处理所选分支中已经推送的代码；Windows 本地未提交或未推送的修改不会包含在内。
+
+### 首次准备页面更新服务器
+
+1. 在 `myski.ski` 服务器上安装 `rsync`，创建 `/var/www/html/appplug/`，并给专用部署用户这个目录及其子目录的写权限。不要让部署用户拥有整个网站的写权限。
+2. 在本地运行 `npm run export-assets`，按下文“热更新”章节将 `dist/nginx-expo-updates.conf` 中的 `map` 和 `location` 配置加入 Nginx，执行 `nginx -t` 并重载。这个 Nginx 配置只需初次部署或更新地址、运行版本规则发生变化时检查；工作流不会自动修改 Nginx 配置。
+3. 给部署用户准备 SSH 密钥登录：将**公钥**加入服务器该用户的 `~/.ssh/authorized_keys`；**私钥**只放在 GitHub Secret，不要提交到仓库。向服务器管理员核对 SSH 主机公钥指纹，再取得对应的 `known_hosts` 行。
+4. 在 GitHub 仓库 **Settings → Secrets and variables → Actions → New repository secret** 添加下表四项：
+
+| Secret | 内容 |
+| --- | --- |
+| `DEPLOY_HOST` | SSH 服务器域名或 IP；不带 `https://` |
+| `DEPLOY_USER` | 有权写入 `/var/www/html/appplug/` 的部署用户名 |
+| `DEPLOY_SSH_KEY` | 与服务器公钥匹配的完整 SSH 私钥，包括 BEGIN/END 行 |
+| `DEPLOY_KNOWN_HOSTS` | 已核对指纹的 SSH 主机密钥行，例如 `myski.ski ssh-ed25519 ...`；若 `DEPLOY_HOST` 填 IP，此处也要有对应 IP 的记录 |
+
+### 构建原生库并交给宿主团队
+
+适用于首次集成，或升级 Expo SDK、增加原生依赖、修改原生配置后。先确认 `app.json` 中 `expo.version` 和 Brownfield Android `version` 是本次要交付的版本，然后推送代码。在 **Actions → Build native libraries → Run workflow** 启动构建。Android 在 Linux runner 构建，iOS 在 macOS 26 runner 构建；本地 Windows 不需要安装 Xcode。
+
+两个任务都成功后，打开本次运行页面，在 **Artifacts** 下载 `android-maven-library` 和 `ios-xcframeworks`。将两个压缩包连同版本号交给宿主团队：Android 产物是 `com/myski/...` 形式的 Maven 仓库目录，宿主可将其放进本地或团队 Maven 仓库，并引用 `com.myski:MyskiPlug:<版本>`；iOS 产物包含 XCFramework，宿主需按其 Xcode 集成方式加入工程。工作流只生成可下载产物，不会自动修改宿主工程或发布应用商店。
+
+### 日常发布页面更新
+
+只修改页面 JS、样式或图片时，先在 Android/iOS 测试宿主中确认显示效果，然后提交并推送代码。在 **Actions → Publish page update → Run workflow** 选择分支并运行。工作流执行 `npm run export-assets`，将 `dist` 保存为本次运行的 Artifact，再经 SSH 上传到 `/var/www/html/appplug/`：先传 JS 和图片，最后传 iOS/Android manifest。它不会删除服务器上的旧资源，并会检查线上两个 manifest 的 ID 是否与本次导出相同。
+
+运行成功后，让测试设备重启宿主应用，确认三个页面都加载了新样式，再用于正式环境。当前工作流直接发布到 `https://myski.ski/appplug/`，没有单独的测试环境，也没有自动回滚。若需要区分测试和正式环境，应先分别配置更新地址和部署目标，再启用对应发布流程。
+
+当前 `package-lock.json` 未纳入 Git 跟踪；工作流在没有锁文件时使用 `npm install`。建议将锁文件纳入 Git，以便以后固定 CI 构建依赖并使用 `npm ci`。
+
 ## 打包为 iOS / Android 库
 
 `app.json` 已定义 iOS `MyskiPlug` XCFramework 和 Android `com.myski:MyskiPlug:1.0.0` 库。构建命令：

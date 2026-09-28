@@ -23,12 +23,12 @@ jobs:
       - name: Install dependencies
         run: |
           if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
-      - name: Build and publish to runner's local Maven repository
-        run: npx expo-brownfield build:android --release --repo MavenLocal
+      - name: Build and publish fused AAR to runner's local Maven repository
+        run: npm run export-android
       - name: Upload Android Maven files
         uses: actions/upload-artifact@v6
         with:
-          name: android-maven-library
+          name: android-fused-aar
           path: ~/.m2/repository/com/myski/
           if-no-files-found: error
 

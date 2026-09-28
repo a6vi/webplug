@@ -24,7 +24,7 @@
 
 适用于首次集成，或升级 Expo SDK、增加原生依赖、修改原生配置后。先确认 `app.json` 中 `expo.version` 和 Brownfield Android `version` 是本次要交付的版本，然后推送代码。在 **Actions → Build native libraries → Run workflow** 启动构建。Android 在 Linux runner 构建，iOS 在 macOS 26 runner 构建；本地 Windows 不需要安装 Xcode。
 
-两个任务都成功后，打开本次运行页面，在 **Artifacts** 下载 `android-maven-library` 和 `ios-xcframeworks`。将两个压缩包连同版本号交给宿主团队：Android 产物是 `com/myski/...` 形式的 Maven 仓库目录，宿主可将其放进本地或团队 Maven 仓库，并引用 `com.myski:MyskiPlug:<版本>`；iOS 产物包含 XCFramework，宿主需按其 Xcode 集成方式加入工程。工作流只生成可下载产物，不会自动修改宿主工程或发布应用商店。
+两个任务都成功后，打开本次运行页面，在 **Artifacts** 下载 `android-fused-aar` 和 `ios-xcframeworks`。将两个压缩包连同版本号交给宿主团队：Android 产物是 `com/myski/...` 形式的 Maven 仓库目录，其中 release 融合包坐标为 `com.myski:MyskiPlug-fused-release:<版本>`；宿主可将整个目录放进本地或团队 Maven 仓库后引用该坐标。融合 AAR 包含本项目、Expo 模块、手势和导航等可融合的 Android 模块；React Native/Hermes、AndroidX、Kotlin 标准库等宿主基础依赖仍按 Expo Brownfield 的设计保留在 POM 中，由宿主 Gradle 解析。iOS 产物包含 XCFramework，宿主需按其 Xcode 集成方式加入工程。工作流只生成可下载产物，不会自动修改宿主工程或发布应用商店。
 
 ### 日常发布页面更新
 
@@ -36,10 +36,10 @@
 
 ## 打包为 iOS / Android 库
 
-`app.json` 已定义 iOS `MyskiPlug` XCFramework 和 Android `com.myski:MyskiPlug:1.0.0` 库。构建命令：
+`app.json` 已定义 iOS `MyskiPlug` XCFramework 和 Android `com.myski:MyskiPlug-fused-release:1.0.0` 融合库。构建命令：
 
 ```sh
-npx expo-brownfield build:android --release
+npm run export-android
 npx expo-brownfield build:ios --release
 ```
 

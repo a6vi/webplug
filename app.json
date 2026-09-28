@@ -15,7 +15,8 @@
       "policy": "appVersion"
     },
     "ios": {
-      "icon": "./assets/images/favicon.ico"
+      "icon": "./assets/images/logo.png",
+      "bundleIdentifier": "com.myski.myskiapp"
     },
     "android": {
       "adaptiveIcon": {

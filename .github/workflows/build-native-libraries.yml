@@ -46,10 +46,25 @@ jobs:
       - name: Install dependencies
         run: |
           if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
-      - name: Generate iOS project
-        run: npx expo prebuild --platform ios --clean
-      - name: Build XCFrameworks
-        run: npx expo-brownfield build:ios --release --artifacts artifacts
+      - name: Generate iOS project and build XCFrameworks
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+          npx expo prebuild --platform ios --clean
+          test -d ios
+          workspace="$(find ios -maxdepth 1 -name '*.xcworkspace' -print -quit)"
+          if [ -z "$workspace" ]; then
+            echo "No .xcworkspace was generated under $GITHUB_WORKSPACE/ios" >&2
+            find ios -maxdepth 2 -print
+            exit 1
+          fi
+          echo "Using iOS workspace: $workspace"
+          npx expo-brownfield build:ios \
+            --release \
+            --xcworkspace "$workspace" \
+            --artifacts "$GITHUB_WORKSPACE/artifacts" \
+            --verbose
       - name: Upload iOS frameworks
         uses: actions/upload-artifact@v6
         with:
